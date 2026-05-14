@@ -108,7 +108,6 @@
             z-index: 10; opacity: 0.9; transition: transform 0.2s;
             background: white; padding: 3px; border-radius: 3px; box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
-        .hidden-item:hover { transform: scale(1.1); filter: brightness(1.2); }
         .hidden-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
 
         .inventory {
@@ -124,7 +123,7 @@
         .inv-slot.filled { background: white; border: 2px solid var(--primary); }
         .inv-slot.filled img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- MODAL TRANSITION & SCALE --- */
+        /* --- MODAL TRANSITION --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7); z-index: 100;
@@ -144,7 +143,7 @@
         
         .modal-card img { 
             width: 100%; 
-            max-height: 50vh; /* ป้องกันรูปใหญ่ล้นจอ */
+            max-height: 50vh; 
             object-fit: contain;
             border-radius: 8px; 
             margin-bottom: 10px; 
@@ -176,15 +175,18 @@
         .final-msg-box h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 15px; }
         .final-msg-box p { font-size: 1rem; line-height: 1.6; color: #555; white-space: pre-line; }
 
-        .choice-container { margin-top: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .checkbox-group { display: flex; gap: 20px; font-size: 1.2rem; }
+        .choice-container { margin-top: 25px; display: flex; flex-direction: column; align-items: center; gap: 15px; min-height: 60px; }
+        .checkbox-group { display: flex; gap: 20px; font-size: 1.2rem; transition: opacity 0.3s; }
         .checkbox-item { display: flex; align-items: center; cursor: pointer; gap: 8px; }
         .checkbox-item input { width: 20px; height: 20px; accent-color: var(--primary); }
-        #confirmLoveBtn {
-            background: var(--primary); color: white; border: none;
-            padding: 12px 40px; border-radius: 25px; font-family: 'Kanit';
-            font-size: 1.1rem; display: none;
+        
+        .success-text {
+            color: var(--primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+        @keyframes bounceIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body onclick="playAudio()">
@@ -192,7 +194,7 @@
     <audio id="bgm" loop><source src="song.mp3" type="audio/mpeg"></audio>
     <div class="bg-floaters" id="bgFloaters"></div>
 
-    <!-- Page 1 - 4 เหมือนเดิม -->
+    <!-- Page 1 -->
     <div id="page1" class="page active">
         <div class="chase-area">
             <h2 style="text-align:center; margin-top:100px; color:var(--accent);">จดหมายรักฉบับนี้<br>ต้องใช้ความพยายามนะ! 😝</h2>
@@ -203,6 +205,7 @@
         <div class="music-hint">🎵 แตะหน้าจอเพื่อเริ่ม 🎵</div>
     </div>
 
+    <!-- Page 2 -->
     <div id="page2" class="page">
         <div class="heart-container" onclick="fillHeart()">
             <svg viewBox="0 0 200 200" width="100%" height="100%">
@@ -218,6 +221,7 @@
         <p class="tap-msg">ช่วยเติมหัวใจให้เต็มหน่อยนะ... ❤️</p>
     </div>
 
+    <!-- Page 3 -->
     <div id="page3" class="page">
         <div class="scratch-box">
             <img src="photo7.jpg" style="width:100%; height:100%; object-fit:cover;">
@@ -225,6 +229,7 @@
         </div>
     </div>
 
+    <!-- Page 4 -->
     <div id="page4" class="page" style="padding:0;">
         <div class="inventory">
             <div class="inv-slot" id="slot1"></div><div class="inv-slot" id="slot2"></div><div class="inv-slot" id="slot3"></div><div class="inv-slot" id="slot4"></div><div class="inv-slot" id="slot5"></div>
@@ -239,7 +244,7 @@
         </div>
     </div>
 
-    <!-- Modal สำหรับแสดงรูป (มีการปรับ Transition) -->
+    <!-- Photo Preview Modal -->
     <div class="modal-overlay" id="previewModal">
         <div class="modal-card">
             <img src="" id="previewImg">
@@ -268,7 +273,7 @@
 คนเก่ง</p>
             
             <div class="choice-container" id="choiceSection">
-                <div class="checkbox-group">
+                <div class="checkbox-group" id="checkboxGroup">
                     <label class="checkbox-item">
                         <input type="checkbox" name="love" value="เป็น" onchange="checkChoice(this)"> เป็น
                     </label>
@@ -276,7 +281,6 @@
                         <input type="checkbox" name="love" value="เป็น" onchange="checkChoice(this)"> เป็น
                     </label>
                 </div>
-                <button id="confirmLoveBtn" onclick="finalCelebrate()">ตกลงครับ ❤️</button>
             </div>
         </div>
     </div>
@@ -295,7 +299,8 @@
             if(!audioPlaying) {
                 document.getElementById('bgm').play().catch(()=>{});
                 audioPlaying = true;
-                document.querySelector('.music-hint').style.display = 'none';
+                const hint = document.querySelector('.music-hint');
+                if(hint) hint.style.display = 'none';
             }
         }
         
@@ -327,7 +332,7 @@
             }, 500);
         }
 
-        // Logic ส่วนต่างๆ เหมือนเดิม
+        // Logic Moving Envelope
         const env = document.getElementById('envelope');
         function moveEnv() {
             const x = Math.random() * (window.innerWidth - 150);
@@ -342,6 +347,7 @@
         }
         env.onclick = () => goTo('page2');
 
+        // Logic Heart Filling
         let heartPercent = 0;
         function fillHeart() {
             heartPercent += 10; 
@@ -351,6 +357,7 @@
             if(heartPercent >= 100) setTimeout(() => goTo('page3'), 600);
         }
 
+        // Logic Scratch
         function startScratch() {
             const c = document.getElementById('scratchCanvas'); const ctx = c.getContext('2d');
             ctx.fillStyle = '#ffacc5'; ctx.fillRect(0,0,300,300);
@@ -382,16 +389,14 @@
             c.addEventListener('touchmove', move);
         }
 
+        // Logic Found Photo
         let collected = 0;
         function foundPhoto(idx, el) {
             document.getElementById('previewImg').src = photos[idx-1].src;
             document.getElementById('previewCaption').innerText = photos[idx-1].caption;
-            
-            // เปิด Modal พร้อม Transition
             const modal = document.getElementById('previewModal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('show-modal'), 10);
-            
             window.lastFoundIdx = idx; window.lastFoundEl = el;
         }
         
@@ -399,27 +404,29 @@
             const modal = document.getElementById('previewModal');
             modal.classList.remove('show-modal');
             setTimeout(() => modal.style.display = 'none', 300);
-            
             window.lastFoundEl.style.opacity = '0';
             const slot = document.getElementById('slot' + window.lastFoundIdx);
             slot.classList.add('filled'); slot.innerHTML = `<img src="${photos[window.lastFoundIdx-1].src}">`;
             collected++;
-            if(collected === 5) {
-                setTimeout(() => document.getElementById('finalMsgContainer').classList.add('show-final'), 800);
-            }
+            if(collected === 5) setTimeout(() => document.getElementById('finalMsgContainer').classList.add('show-final'), 800);
         }
 
+        // Logic Checkbox & Final Text (เปลี่ยนทันทีที่เลือก)
         function checkChoice(checkbox) {
-            const checkboxes = document.getElementsByName('love');
-            checkboxes.forEach((item) => { if (item !== checkbox) item.checked = false; });
-            document.getElementById('confirmLoveBtn').style.display = 'block';
-        }
-
-        // ฟังก์ชันเมื่อกด "ตกลงครับ"
-        function finalCelebrate() {
-            alert("เย้! เค้าจะเป็นแฟนที่ดีที่สุดของเธอเลย");
-            document.getElementById('choiceSection').innerHTML = "<h2 style='color:var(--primary); animation:pulse 1s infinite;'>เค้ารักเตงที่สุดเลยยย ❤️</h2>";
-            createFloaters('bgFloaters', 40);
+            const container = document.getElementById('choiceSection');
+            const group = document.getElementById('checkboxGroup');
+            
+            if(checkbox.checked) {
+                group.style.opacity = "0";
+                setTimeout(() => {
+                    group.style.display = "none";
+                    const success = document.createElement('div');
+                    success.className = 'success-text';
+                    success.innerHTML = "เย้! เค้าจะเป็นแฟนที่ดีที่สุดของเธอเลย ❤️";
+                    container.appendChild(success);
+                    createFloaters('bgFloaters', 40); // เพิ่มเอฟเฟกต์หัวใจฉลอง
+                }, 300);
+            }
         }
     </script>
 </body>
